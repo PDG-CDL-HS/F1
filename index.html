@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F1 Study Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .mode-selector {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .mode-btn {
+            padding: 12px 24px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            background: white;
+            color: #667eea;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .mode-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+        }
+
+        .mode-btn.active {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .study-area {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            min-height: 400px;
+        }
+
+        .card {
+            text-align: center;
+            perspective: 1000px;
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%;
+            min-height: 300px;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+
+        .card-inner.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            min-height: 300px;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .card-front {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .card-back {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            transform: rotateY(180deg);
+        }
+
+        .card-question, .card-answer {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .hint {
+            font-size: 1em;
+            opacity: 0.9;
+            margin-top: 10px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #51cf66;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+        }
+
+        .progress {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 18px;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .team-logo {
+            max-width: 400px;
+            max-height: 300px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .input-section {
+            margin-top: 20px;
+        }
+
+        .input-section input {
+            padding: 12px;
+            font-size: 18px;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 400px;
+            margin: 10px auto;
+            display: block;
+        }
+
+        .feedback {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 18px;
+        }
+
+        .correct {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .incorrect {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏎️ F1 Driver & Team Study Tool</h1>
+        
+        <div class="mode-selector">
+            <button class="mode-btn active" onclick="setMode('names')">Driver Names</button>
+            <button class="mode-btn" onclick="setMode('teams')">Driver Teams</button>
+            <button class="mode-btn" onclick="setMode('logos')">Team Logos</button>
+        </div>
+
+        <div class="study-area">
+            <div id="content"></div>
+            <div class="controls" id="controls"></div>
+            <div class="progress" id="progress"></div>
+        </div>
+    </div>
+
+    <script>
+        const drivers = [
+            { first: 'Lando', last: 'Norris', team: 'McClaren' },
+            { first: 'Oscar', last: 'Piastri', team: 'McClaren' },
+            { first: 'George', last: 'Russell', team: 'Mercedes' },
+            { first: 'Kimi', last: 'Antonelli', team: 'Mercedes' },
+            { first: 'Max', last: 'Verstappen', team: 'Red Bull' },
+            { first: 'Yuki', last: 'Tsunoda', team: 'Red Bull' },
+            { first: 'Charles', last: 'Leclerc', team: 'Ferrari' },
+            { first: 'Lewis', last: 'Hamilton', team: 'Ferrari' },
+            { first: 'Alex', last: 'Albon', team: 'Williams' },
+            { first: 'Carlos', last: 'Sainz', team: 'Williams' },
+            { first: 'Liam', last: 'Lawson', team: 'Racing Bulls (RB)' },
+            { first: 'Isack', last: 'Hadjar', team: 'Racing Bulls (RB)' },
+            { first: 'Pierre', last: 'Gasly', team: 'Alpine' },
+            { first: 'Franco', last: 'Colapinto', team: 'Alpine' },
+            { first: 'Esteban', last: 'Ocon', team: 'Haas' },
+            { first: 'Ollie', last: 'Bearman', team: 'Haas' },
+            { first: 'Fernando', last: 'Alonso', team: 'Aston Martin' },
+            { first: 'Lance', last: 'Stroll', team: 'Aston Martin' },
+            { first: 'Nico', last: 'Hulkenberg', team: 'Kick Sauber' },
+            { first: 'Gabriel', last: 'Bortoleto', team: 'Kick Sauber' }
+        ];
+
+        const teamLogos = [
+            { team: 'McClaren', image: 'mcclaren.png' },
+            { team: 'Mercedes', image: 'mercedes.png' },
+            { team: 'Red Bull', image: 'red_bull.png' },
+            { team: 'Ferrari', image: 'ferrari.png' },
+            { team: 'Williams', image: 'williams.png' },
+            { team: 'Racing Bulls (RB)', image: 'racing_bulls_(rb).png' },
+            { team: 'Alpine', image: 'alpine.png' },
+            { team: 'Haas', image: 'haas.png' },
+            { team: 'Aston Martin', image: 'aston_martin.png' },
+            { team: 'Kick Sauber', image: 'kick_sauber.png' }
+        ];
+
+        let currentMode = 'names';
+        let currentIndex = 0;
+        let isFlipped = false;
+        let currentQuestion = {};
+
+        function setMode(mode) {
+            currentMode = mode;
+            currentIndex = 0;
+            isFlipped = false;
+            
+            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            if (mode === 'names') showNameCard();
+            else if (mode === 'teams') showTeamCard();
+            else if (mode === 'logos') showLogoCard();
+        }
+
+        function showNameCard() {
+            const driver = drivers[currentIndex];
+            const showFirst = Math.random() > 0.5;
+            
+            currentQuestion = {
+                question: showFirst ? driver.first : driver.last,
+                answer: showFirst ? driver.last : driver.first,
+                type: showFirst ? 'first' : 'last'
+            };
+
+            const hint = currentQuestion.type === 'first' ? 'First name given - what\'s the last name?' : 'Last name given - what\'s the first name?';
+
+            document.getElementById('content').innerHTML = `
+                <div class="card">
+                    <div class="card-inner" id="cardInner">
+                        <div class="card-front">
+                            <div class="card-question">${currentQuestion.question}</div>
+                            <div class="hint">${hint}</div>
+                        </div>
+                        <div class="card-back">
+                            <div class="card-answer">${currentQuestion.answer}</div>
+                            <div class="hint">Full name: ${driver.first} ${driver.last}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('controls').innerHTML = `
+                <button class="btn btn-primary" onclick="flipCard()">Show Answer</button>
+                <button class="btn btn-secondary" onclick="nextCard()">Next Driver</button>
+            `;
+
+            updateProgress();
+        }
+
+        function showTeamCard() {
+            const driver = drivers[currentIndex];
+            const questionType = Math.random() > 0.5 ? 'driverToTeam' : 'teamToDrivers';
+            
+            if (questionType === 'driverToTeam') {
+                currentQuestion = {
+                    question: `${driver.first} ${driver.last}`,
+                    answer: driver.team,
+                    type: 'driverToTeam'
+                };
+
+                document.getElementById('content').innerHTML = `
+                    <div class="card">
+                        <div class="card-inner" id="cardInner">
+                            <div class="card-front">
+                                <div class="card-question">${currentQuestion.question}</div>
+                                <div class="hint">Which team does this driver race for?</div>
+                            </div>
+                            <div class="card-back">
+                                <div class="card-answer">${currentQuestion.answer}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                const teamDrivers = drivers.filter(d => d.team === driver.team);
+                currentQuestion = {
+                    question: driver.team,
+                    answer: teamDrivers.map(d => `${d.first} ${d.last}`).join(' & '),
+                    type: 'teamToDrivers'
+                };
+
+                document.getElementById('content').innerHTML = `
+                    <div class="card">
+                        <div class="card-inner" id="cardInner">
+                            <div class="card-front">
+                                <div class="card-question">${currentQuestion.question}</div>
+                                <div class="hint">Which two drivers race for this team?</div>
+                            </div>
+                            <div class="card-back">
+                                <div class="card-answer">${currentQuestion.answer}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            document.getElementById('controls').innerHTML = `
+                <button class="btn btn-primary" onclick="flipCard()">Show Answer</button>
+                <button class="btn btn-secondary" onclick="nextCard()">Next Question</button>
+            `;
+
+            updateProgress();
+        }
+
+        function showLogoCard() {
+            const logo = teamLogos[currentIndex % teamLogos.length];
+            
+            currentQuestion = {
+                question: logo.team,
+                answer: logo.team,
+                userAnswer: ''
+            };
+
+            document.getElementById('content').innerHTML = `
+                <div style="text-align: center;">
+                    <div style="width: 400px; height: 250px; margin: 0 auto; background: #f8f9fa; border-radius: 15px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 16px rgba(0,0,0,0.2); padding: 20px;">
+                        <img src="${logo.image}" alt="Team Logo" class="team-logo" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                    </div>
+                    <div class="input-section">
+                        <input type="text" id="logoInput" placeholder="Type the team name..." onkeypress="if(event.key==='Enter') checkLogoAnswer()">
+                    </div>
+                    <div id="feedback"></div>
+                </div>
+            `;
+
+            document.getElementById('controls').innerHTML = `
+                <button class="btn btn-primary" onclick="checkLogoAnswer()">Check Answer</button>
+                <button class="btn btn-secondary" onclick="nextCard()">Next Logo</button>
+            `;
+
+            updateProgress();
+            setTimeout(() => document.getElementById('logoInput').focus(), 100);
+        }
+
+        function flipCard() {
+            const cardInner = document.getElementById('cardInner');
+            if (cardInner) {
+                cardInner.classList.toggle('flipped');
+            }
+        }
+
+        function nextCard() {
+            currentIndex++;
+            isFlipped = false;
+            
+            if (currentMode === 'names') {
+                if (currentIndex >= drivers.length) currentIndex = 0;
+                showNameCard();
+            } else if (currentMode === 'teams') {
+                if (currentIndex >= drivers.length) currentIndex = 0;
+                showTeamCard();
+            } else if (currentMode === 'logos') {
+                if (currentIndex >= teamLogos.length * 2) currentIndex = 0;
+                showLogoCard();
+            }
+        }
+
+        function checkLogoAnswer() {
+            const input = document.getElementById('logoInput');
+            const feedback = document.getElementById('feedback');
+            const userAnswer = input.value.trim().toLowerCase();
+            const correctAnswer = currentQuestion.answer.toLowerCase();
+
+            if (userAnswer === correctAnswer) {
+                feedback.innerHTML = '<div class="feedback correct">✓ Correct!</div>';
+            } else {
+                feedback.innerHTML = `<div class="feedback incorrect">✗ Incorrect. The answer is: ${currentQuestion.answer}</div>`;
+            }
+        }
+
+        function updateProgress() {
+            let total, current;
+            if (currentMode === 'logos') {
+                total = teamLogos.length * 2;
+                current = (currentIndex % total) + 1;
+            } else {
+                total = drivers.length;
+                current = currentIndex + 1;
+            }
+            document.getElementById('progress').textContent = `Question ${current} of ${total}`;
+        }
+
+        // Initialize
+        showNameCard();
+    </script>
+</body>
+</html>
